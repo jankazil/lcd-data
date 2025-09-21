@@ -1,0 +1,9 @@
+name: lcd_data
+channels:
+  - conda-forge
+dependencies:
+  - python=3.13
+  - pip
+  - mamba
+  - pip:
+      - git+https://github.com/jankazil/lcd-data
