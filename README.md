@@ -80,7 +80,7 @@ build-lcd-dataset 2021 2021 CO /path/to/data --offline
 
 ## Sample results
 
-Original and interpolated full-hourly UTC time series in November 2024, Twenty Nine Palms, CA:
+Original and interpolated full-hourly UTC time series in November 2024, Twentynine Palms, CA:
 
 ![LCD station USL000ANVC1 time series, December 2024](plots/USW00093121.Nov-2024.png)  
 <br>
