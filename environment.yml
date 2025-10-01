@@ -6,6 +6,7 @@ dependencies:
   - pip
   - geopandas
   - matplotlib
+  - netcdf4
   - numpy
   - pandas
   - requests
