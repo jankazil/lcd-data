@@ -45,7 +45,7 @@ The following describes the internal workflow performed by the command-line tool
 5. Download LCD v2 observation files from NCEI for the selected stations and years, skipping files already present that match by ETag.
 6. Construct full-hourly UTC time series for temperature (T), dew point (Td), relative humidity (RH), and wind speed by reading, cleaning, and interpolating station observations. Remove temperatures above 60 °C. Perform interpolation only across gaps of up to 2 hours. Derive RH from T and Td.
 7. Optionally write comparison plots for the original and interpolated series.
-8. Save the full-hourly UTC time series as a NetCDF file.
+8. Save the full-hourly UTC time series as a NetCDF file, for the given station or the stations in the state/region.
 
 **Note:** Interpolation of station observations to construct full-hourly UTC time series across many years and/or many stations can be very slow due to inherent limitations of Python.
 
@@ -84,7 +84,6 @@ Original and interpolated full-hourly UTC time series in November 2024, Twenty N
 
 ![LCD station USL000ANVC1 time series, December 2024](plots/USW00093121.Nov-2024.png)  
 <br>
-
 ## Public API
 
 ### Modules
