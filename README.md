@@ -30,7 +30,7 @@ pip install git+https://github.com/jankazil/lcd-data
 
 ## Overview
 
-The package provides a command-line tool that selects stations by geography (a single station by GHCNh identifier, a U.S. state or territory, RTO/ISO regions, and the special region CONUS representing the contiguous U.S.), checks data availability, downloads LCD v2 observation files for a given year range, constructs full-hourly UTC time series for several observables, and writes a NetCDF file. It can optionally generate plots comparing the original and the interpolated series.
+The package provides a command-line tool that selects stations by geography (a single station by GHCNh identifier, a U.S. state or territory, RTO/ISO regions, and the special region CONUS representing the contiguous U.S.), checks data availability, downloads LCD v2 observation files for a given year range, constructs full-hourly UTC time series for several observables, and writes a NetCDF file. It can optionally generate plots comparing the original and the interpolated time series.
 
 Geospatial region selection is based on a U.S. Energy Information Administration GeoJSON of RTO/ISO footprints and U.S. Census Bureau state/territory boundaries.
 
@@ -77,6 +77,13 @@ build-lcd-dataset 2021 2021 CO /path/to/data --offline
 - `-n, --n INT`: Maximum number of parallel downloads.  
 - `-o, --offline`: Work offline; expect required files to be present in `data_dir`.  
 - `-p, --plotdir PATH`: Directory to write comparison plots; plotting is slow.
+
+## Sample results
+
+Original and interpolated full-hourly UTC time series in November 2024 at the Twenty Nine Palms Station, CA:
+
+![LCD station USL000ANVC1 time series, December 2024](plots/USW00093121.Nov-2024.png)  
+<br>
 
 ## Public API
 
