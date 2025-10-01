@@ -1,1 +1,7 @@
 * text=auto eol=lf
+*.shp binary
+*.dbf binary
+*.shx binary
+*.cpg text
+*.prj text
+*.geojson text
