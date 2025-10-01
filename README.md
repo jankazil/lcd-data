@@ -25,12 +25,7 @@ LCD v2 is provided by the [National Centers for Environmental Information (NCEI)
 ## Installation (Linux / macOS)
 
 ```bash
-python -m venv .venv
-  
-source .venv/bin/activate
-  
-# Install the package (editable install recommended during development)
-pip install -e .
+pip install git+https://github.com/jankazil/lcd-data
 ```
 
 ## Overview
