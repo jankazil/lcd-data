@@ -1,30 +1,146 @@
 # lcd-data
 
-**lcd-data** short description.
+**lcd-data** is a Python toolkit for downloading and processing [Local Climatological Data version 2 (LCDv2) ](https://www.ncei.noaa.gov/products/land-based-station/local-climatological-data) data.
+
+It provides:
+
+- A top level command-line tool that
+  - automates the download of LCD v2 station observations for
+    - individual stations
+    - U.S. states and territories
+    - Regional Transmission Organization (RTO) / Independent System Operator (ISO) regions
+    
+  - constructs full-hourly UTC time series of
+    - temperature at 2 m
+    - dew point temperature at 2 m
+    - relative humidity at 2 m
+    - wind speed at 10 m
+  
+    from LCD v2 station observation time series, for a user-specified time range, and saves them as netCDF files.
+  
+- Modules for processing LCD v2 station observations.
+
+LCD v2 is provided by the [National Centers for Environmental Information (NCEI)](https://www.ncei.noaa.gov/).
 
 ## Installation (Linux / macOS)
 
 ```bash
-<bash commands here>
+python -m venv .venv
+  
+source .venv/bin/activate
+  
+# Install the package (editable install recommended during development)
+pip install -e .
 ```
 
 ## Overview
 
+The package provides a command-line tool that selects stations by geography (a single station by GHCNh identifier, a U.S. state or territory, RTO/ISO regions, and the special region CONUS representing the contiguous U.S.), checks data availability, downloads LCD v2 observation files for a given year range, constructs full-hourly UTC time series for several observables, and writes a NetCDF file. It can optionally generate plots comparing the original and the interpolated series.
+
+Geospatial region selection is based on a U.S. Energy Information Administration GeoJSON of RTO/ISO footprints and U.S. Census Bureau state/territory boundaries.
+
 ## Workflow
+
+The following describes the internal workflow performed by the command-line tool:
+
+1. Load the region geometry (RTO/ISO polygons or U.S. state/territory boundaries) if a region is specified; skip this step if a station ID is provided.
+2. Retrieve the station list from NCEI and either filter it spatially by region or select the specified station. Cache the list to disk.
+3. Filter the stations by data availability for the requested year range, either online by probing NCEI or offline by checking local files.
+4. Save the filtered station list for reference.
+5. Download LCD v2 observation files from NCEI for the selected stations and years, skipping files already present that match by ETag.
+6. Construct full-hourly UTC time series for temperature (T), dew point (Td), relative humidity (RH), and wind speed by reading, cleaning, and interpolating station observations. Remove temperatures above 60 °C. Perform interpolation only across gaps of up to 2 hours. Derive RH from T and Td.
+7. Optionally write comparison plots for the original and interpolated series.
+8. Save the full-hourly UTC time series as a NetCDF file.
+
+**Note:** Interpolation of station observations to construct full-hourly UTC time series across many years and/or many stations can be very slow due to inherent limitations of Python.
+
+
+## Command-line interface (CLI)
+
+The CLI is exposed as build-lcd-dataset when installed, and can also be invoked directly as a module.
+
+```bash
+# Provide usage information, a list of two-letter U.S. state/territory codes, and a list of RTO/ISO region names:
+build-lcd-dataset --help
+  
+# Example calls
+build-lcd-dataset 2020 2025 USW00003017 /path/to/data -p /path/to/plots
+  
+build-lcd-dataset 2022 2022 ERCOT /path/to/data -n 32
+  
+build-lcd-dataset 2021 2021 CO /path/to/data --offline
+
+# Invoke the CLI module directly without installing
+python -m lcd_data.build_lcd_dataset --help
+```
+
+**Positional arguments**  
+
+- `start_year` and `end_year`: Inclusive range of years.  
+- `region_name`: Two-letter U.S. state or territory code (e.g., `CA`, `PR`), the special region `CONUS`, one of the RTO/ISO codes (`ERCOT`, `CAISO`, `ISONE`, `NYISO`, `MISO`, `SPP`, `PJM`), or a station ID (GHCNh identifier).  
+- `data_dir`: Destination directory for station lists, downloads, and outputs.
+
+**Options**  
+
+- `-n, --n INT`: Maximum number of parallel downloads.  
+- `-o, --offline`: Work offline; expect required files to be present in `data_dir`.  
+- `-p, --plotdir PATH`: Directory to write comparison plots; plotting is slow.
 
 ## Public API
 
 ### Modules
+
+#### `lcd_data.ncei`
+Utilities for station metadata and LCD v2 downloads.
+
+- URLs for NCEI GHCNh station list and LCD v2 observation files.
+- `download_stations_meta_files(local_dir)`: Download GHCNh and LCD v2 station meta documents.
+- `lcd_data_file_name(year, station_id)`: Construct the canonical LCD v2 observation file name.
+- `lcd_data_file_paths(start_year, end_year, station_ids, local_dir)`: Build local paths for all expected files.
+- `lcd_data_url(year, station_id)`: Build the absolute URL to a LCD v2 observation file.
+- `lcd_data_urls(station_ids, start_year, end_year, n_jobs)`: Probe NCEI server to list existing files.
+- `download_many(...)` and `download_threaded(...)`: Concurrent file downloads with optional refresh behavior.
+- `download_file(url, local_dir, refresh=False, verbose=False)`: Robust download with ETag checking and retries.
+
+#### `lcd_data.rto_iso`
+Helpers to work with RTO/ISO region polygons.
+
+- `REGION_NAMES`: `['CAISO', 'ERCOT', 'ISONE', 'NYISO', 'MISO', 'PJM', 'SPP']`.
+- `regions(rto_iso_geojson)`: Read GeoJSON and return a GeoDataFrame with merged geometries for each region.
+- `region(rto_iso_geojson, region_name)`: Return a GeoDataFrame for the requested region.
+
+#### `lcd_data.saturation`
+Saturation vapor pressure and relative humidity utilities.
+
+- `esatw(T)`: Saturation vapor pressure over liquid water (hPa) using an 8th‑order polynomial fit.
+- `rh(T, Td)`: Relative humidity (%) computed from temperature and dew point.
+
+#### `lcd_data.stations`
+Station catalog handling, filtering, reading, interpolation, and writing.
+
+- `Stations.from_url()` / `Stations.from_file(path)`: Build the station catalog from GHCNh-format metadata.
+- Spatial selection by region geometry with `filter_by_region(region_gdf)` and by bounding box with `filter_by_coordinates(...)`.
+- Availability filters: `filter_by_data_availability_online(start_time, end_time, n_jobs, verbose)` and `filter_by_data_availability_offline(data_dir, start_time, end_time, verbose)`.
+- Station utilities: `filter_by_id(station_id)`, `ids()`, `save_station_list(path)`.
+- `read_station_observations(...)`: Read and clean per‑station LCD v2 observation files; parse times to UTC, coerce numeric columns, correct Celsius-with-18.3° base fields, drop non-observational report types, limit unrealistic temperatures, and compute hourly RH.
+- `construct_hourly(...)`: Build full-hourly UTC series for `T`, `Td`, `RH`, and `windspeed`, with optional plotting and gap-limited interpolation.
+- `write_utc_hourly_netcdf(path)`: Save the hourly dataset to NetCDF with safe encodings.
 
 ## Development
 
 ### Code Quality and Testing Commands
 
 - `make fmt` - Runs ruff format, which automatically reformats Python files according to the style rules in `pyproject.toml`
-- `make lint` - Runs ruff check --fix, which lints the code (checks for style errors, bugs, outdated patterns, etc.) and auto-fixes what it can.
+- `make lint` - Runs ruff check - -fix, which lints the code (checks for style errors, bugs, outdated patterns, etc.) and auto-fixes what it can.
 - `make check` - Runs fmt and lint.
 - `make type` - Currently disabled. Runs mypy, the static type checker, using the strictness settings from `pyproject.toml`. Mypy is a static type checker for Python, a dynamically typed language. Because static analysis cannot account for all dynamic runtime behaviors, mypy may report false positives which do no reflect actual runtime issues.
 - `make test` - Runs pytest with reporting (configured in `pyproject.toml`).
+
+## Disclaimers
+
+The LCD v2 data accessed by this software are publicly available from NOAA's National Centers for Environmental Information (NCEI) and are subject to their terms of use. This project is not affiliated with or endorsed by NOAA.
+
+This software uses U.S. Census Bureau and U.S. Energy Information Administration data, but is neither endorsed nor certified by the U.S. Census Bureau or the U.S. Energy Information Administration.
 
 ## Author
 
@@ -33,4 +149,3 @@ Jan Kazil - jan.kazil.dev@gmail.com - [jankazil.com](https://jankazil.com)
 ## License
 
 BSD-3-Clause
-

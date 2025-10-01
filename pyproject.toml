@@ -5,12 +5,23 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lcd-data"
 version = "0.0.0"
-description = "Short description"
+description = "Python toolkit for downloading and processing Local Climatological Data version 2 (LCDv2) data."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "Jan Kazil" }]
-dependencies = []
+dependencies = [
+  "geopandas~=1.1",
+  "matplotlib~=3.10",
+  "numpy~=2.2",
+  "pandas~=2.3",
+  "requests~=2.32",
+  "shapely~=2.1",
+  "xarray~=2025.8",
+]
+
+[project.scripts]
+build-lcd-dataset = "lcd_data.build_lcd_dataset:main" # Connects name of executable in $PATH to the python module containing main()
 
 [project.optional-dependencies]
 dev = [
@@ -19,6 +30,19 @@ dev = [
   "mypy>=1.11",
   "ruff>=0.5",
   "pre-commit>=3.7",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Ensure non-Python assets ship inside the wheel/sdist
+[tool.setuptools.package-data]
+lcd_data = [
+    "data/EIA/*.geojson",
+    "data/CensusBureau/US_states/*",
 ]
 
 [tool.ruff]
@@ -39,7 +63,7 @@ quote-style = "preserve"
 # do no reflect actual runtime issues.
 #
 #[tool.mypy]
-#python_version = "3.13"
+#python_version = "3.10"
 #warn_unused_configs = true
 #disallow_untyped_defs = true
 #disallow_incomplete_defs = true

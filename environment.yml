@@ -2,8 +2,14 @@ name: lcd_data
 channels:
   - conda-forge
 dependencies:
-  - python=3.13
+  - python>=3.10
   - pip
-  - mamba
+  - geopandas>=1.1
+  - matplotlib>=3.10
+  - numpy>=2.2
+  - pandas>=2.3
+  - requests>=2.32
+  - shapely>=2.1
+  - xarray>=2025.8
   - pip:
       - git+https://github.com/jankazil/lcd-data
