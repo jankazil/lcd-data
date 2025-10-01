@@ -52,7 +52,7 @@ The following describes the internal workflow performed by the command-line tool
 
 ## Command-line interface (CLI)
 
-The CLI is exposed as build-lcd-dataset when installed, and can also be invoked directly as a module.
+The CLI is exposed as `"build-lcd-dataset"` when installed.
 
 ```bash
 # Provide usage information, a list of two-letter U.S. state/territory codes, and a list of RTO/ISO region names:
@@ -64,9 +64,6 @@ build-lcd-dataset 2020 2025 USW00003017 /path/to/data -p /path/to/plots
 build-lcd-dataset 2022 2022 ERCOT /path/to/data -n 32
   
 build-lcd-dataset 2021 2021 CO /path/to/data --offline
-
-# Invoke the CLI module directly without installing
-python -m lcd_data.build_lcd_dataset --help
 ```
 
 **Positional arguments**  
