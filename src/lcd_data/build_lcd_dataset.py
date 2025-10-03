@@ -50,74 +50,7 @@ from pathlib import Path
 
 import geopandas as gpd
 
-from lcd_data import ncei, rto_iso, stations
-
-#
-# US states, territories, and regions
-#
-
-us_states_territories = [
-    'AK',
-    'AL',
-    'AR',
-    'AS',
-    'AZ',
-    'CA',
-    'CO',
-    'CT',
-    'DC',
-    'DE',
-    'FL',
-    'GA',
-    'GU',
-    'HI',
-    'IA',
-    'ID',
-    'IL',
-    'IN',
-    'KS',
-    'KY',
-    'LA',
-    'MA',
-    'MD',
-    'ME',
-    'MI',
-    'MN',
-    'MO',
-    'MP',
-    'MS',
-    'MT',
-    'NC',
-    'ND',
-    'NE',
-    'NH',
-    'NJ',
-    'NM',
-    'NV',
-    'NY',
-    'OH',
-    'OK',
-    'OR',
-    'PA',
-    'PR',
-    'RI',
-    'SC',
-    'SD',
-    'TN',
-    'TX',
-    'UT',
-    'VA',
-    'VI',
-    'VT',
-    'WA',
-    'WI',
-    'WV',
-    'WY',
-]
-
-conus = 'CONUS'
-
-rto_iso_regions = ['CAISO', 'ERCOT', 'ISONE', 'MISO', 'NYISO', 'PJM', 'SPP']
+from lcd_data import ncei, region_codes, rto_iso, stations
 
 
 def arg_parse(argv=None):
@@ -179,9 +112,9 @@ def arg_parse(argv=None):
         "applicable, downloads observations, constructs full-hourly UTC time series, optionally "
         "creates diagnostic plots, and writes a NetCDF file.\n\n"
         "Valid region or station arguments:\n\n"
-        f"  - US states/territories: {', '.join(us_states_territories)}\n\n"
-        f"  - Special region: {conus}\n\n"
-        f"  - RTO/ISO regions: {', '.join(rto_iso_regions)}\n\n"
+        f"  - US states/territories: {', '.join(region_codes.us_states_territories)}\n\n"
+        f"  - Special region: {region_codes.conus}\n\n"
+        f"  - RTO/ISO regions: {', '.join(region_codes.rto_iso_regions)}\n\n"
         "  - Individual station: provide a station ID (GHCNh station identifier)\n\n"
         "Parallel downloads can be enabled with -n.\n\n"
         "LCD observation files already present in the download directory and unchanged on the NOAA NCEI server are not re-downloaded."
@@ -201,7 +134,7 @@ def arg_parse(argv=None):
         help=(
             "Region or station selector. Use a two-letter U.S. state or territory code, 'CONUS', "
             "one of the RTO/ISO codes "
-            f"({', '.join(rto_iso_regions)}), or a station ID (GHCNh station identifier)."
+            f"({', '.join(region_codes.rto_iso_regions)}), or a station ID (GHCNh station identifier)."
         ),
     )
 
@@ -270,20 +203,23 @@ def main(argv=None):
             + ' unless they are already present and identical with their version on the NCEI server.'
         )
 
+    # Create data directory unless it exists
+    data_dir.mkdir(parents=True, exist_ok=True)
+
     #
     # Identify stations in the selected US state, territory, region, or handle an individual station
     #
 
     working_on_region = False
 
-    if region_name in rto_iso_regions:
+    if region_name in region_codes.rto_iso_regions:
         working_on_region = True
         # Load RTO/ISO region GeoJSON from installed distribution using importlib.resources
         rto_iso_geojson_res = files('lcd_data') / 'data' / 'EIA' / 'RTO_ISO_regions.geojson'
         with as_file(rto_iso_geojson_res) as rto_iso_geojson_path:
             region_gdf = rto_iso.region(rto_iso_geojson_path, region_name)
 
-    elif region_name in us_states_territories:
+    elif region_name in region_codes.us_states_territories:
         working_on_region = True
         # Load US states shapefile directory from installed distribution using importlib.resources
         us_states_dir_res = files('lcd_data') / 'data' / 'CensusBureau' / 'US_states'
@@ -292,7 +228,7 @@ def main(argv=None):
             us_gdf = gpd.read_file(us_states_shp_file)
         region_gdf = us_gdf[us_gdf['STUSPS'].isin([region_name])]
 
-    elif region_name == conus:
+    elif region_name == region_codes.conus:
         working_on_region = True
         # Load US states shapefile directory from installed distribution using importlib.resources
         us_states_dir_res = files('lcd_data') / 'data' / 'CensusBureau' / 'US_states'
@@ -347,9 +283,9 @@ def main(argv=None):
 
     # Save full-hourly UTC time series as a netCDF file
 
-    lcd_necdf_file = data_dir / Path(region_name + '.' + str(start_date.year) + '-' + str(end_date.year) + '.nc')
+    lcd_netcdf_file = data_dir / Path(region_name + '.' + str(start_date.year) + '-' + str(end_date.year) + '.nc')
 
-    region_stations.write_utc_hourly_netcdf(lcd_necdf_file)
+    region_stations.write_utc_hourly_netcdf(lcd_netcdf_file)
 
 
 if __name__ == '__main__':

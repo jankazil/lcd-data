@@ -5,19 +5,20 @@
 It provides:
 
 - A top level command-line tool that
+  
   - automates the download of LCD v2 station observations for
     - individual stations
     - U.S. states and territories
     - Regional Transmission Organization (RTO) / Independent System Operator (ISO) regions
     
-  - constructs full-hourly UTC time series of
+  - constructs by interpolation the full-hourly UTC time series of
     - temperature at 2 m
     - dew point temperature at 2 m
     - relative humidity at 2 m
     - wind speed at 10 m
   
-    from LCD v2 station observation time series, for a user-specified time range, and saves them as netCDF files.
-  
+    from the LCD v2 station observation time series, for the selected station or stations in the selected state/territory/region, and a user-specified time range, and saves them as a netCDF file.  
+    
 - Modules for processing LCD v2 station observations.
 
 LCD v2 is provided by the [National Centers for Environmental Information (NCEI)](https://www.ncei.noaa.gov/).
@@ -32,7 +33,9 @@ pip install git+https://github.com/jankazil/lcd-data
 
 The package provides a command-line tool that selects stations by geography (a single station by GHCNh identifier, a U.S. state or territory, RTO/ISO regions, and the special region CONUS representing the contiguous U.S.), checks data availability, downloads LCD v2 observation files for a given year range, constructs full-hourly UTC time series for several observables, and writes a NetCDF file. It can optionally generate plots comparing the original and the interpolated time series.
 
-Geospatial region selection is based on a U.S. Energy Information Administration GeoJSON of RTO/ISO footprints and U.S. Census Bureau state/territory boundaries.
+Geospatial region selection is based on U.S. Energy Information Administration definitions of RTO/ISO footprints, and U.S. Census Bureau state/territory boundaries, included with the package.
+
+The station list with GHCNh station identifiers is available [here](https://www.ncei.noaa.gov/oa/global-historical-climatology-network/hourly/doc/ghcnh-station-list.txt).
 
 ## Workflow
 
@@ -52,13 +55,12 @@ The following describes the internal workflow performed by the command-line tool
 
 ## Command-line interface (CLI)
 
-The CLI is exposed as `"build-lcd-dataset"` when installed.
+The CLI is exposed as `"build-lcd-dataset"` when installed:
 
 ```bash
 # Provide usage information, a list of two-letter U.S. state/territory codes, and a list of RTO/ISO region names:
 build-lcd-dataset --help
   
-# Example calls
 build-lcd-dataset 2020 2025 USW00003017 /path/to/data -p /path/to/plots
   
 build-lcd-dataset 2022 2022 ERCOT /path/to/data -n 32
@@ -69,7 +71,7 @@ build-lcd-dataset 2021 2021 CO /path/to/data --offline
 **Positional arguments**  
 
 - `start_year` and `end_year`: Inclusive range of years.  
-- `region_name`: Two-letter U.S. state or territory code (e.g., `CA`, `PR`), the special region `CONUS`, one of the RTO/ISO codes (`ERCOT`, `CAISO`, `ISONE`, `NYISO`, `MISO`, `SPP`, `PJM`), or a station ID (GHCNh identifier).  
+- `region_name`: Two-letter U.S. state or territory code (e.g., `CA`, `PR`), the special region `CONUS`, one of the RTO/ISO codes (`ERCOT`, `CAISO`, `ISONE`, `NYISO`, `MISO`, `SPP`, `PJM`), or a station identifier as in [the GHCNh station list](https://www.ncei.noaa.gov/oa/global-historical-climatology-network/hourly/doc/ghcnh-station-list.txt).  
 - `data_dir`: Destination directory for station lists, downloads, and outputs.
 
 **Options**  
@@ -83,7 +85,7 @@ build-lcd-dataset 2021 2021 CO /path/to/data --offline
 Original and interpolated full-hourly UTC time series in November 2024, Twentynine Palms, CA:
 
 ![LCD station USL000ANVC1 time series, December 2024](plots/USW00093121.Nov-2024.png)  
-<br>
+
 ## Public API
 
 ### Modules
@@ -112,6 +114,14 @@ Saturation vapor pressure and relative humidity utilities.
 
 - `esatw(T)`: Saturation vapor pressure over liquid water (hPa) using an 8th‑order polynomial fit.
 - `rh(T, Td)`: Relative humidity (%) computed from temperature and dew point.
+
+#### `lcd_data.region_codes`
+Provides
+
+  - `lcd_data.region_codes.countries`: Three-letter ISO 3166-1 alpha-3 country codes
+  - `lcd_data.region_codes.us_states_territories`: Two-letter U.S. state or territory codes
+  - `lcd_data.region_codes.conus`: The special `CONUS` region code
+  - `lcd_data.region_codes.rto_iso_regions`: RTO/ISO region codes
 
 #### `lcd_data.stations`
 Station catalog handling, filtering, reading, interpolation, and writing.

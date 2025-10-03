@@ -147,6 +147,9 @@ class Stations:
 
         '''
 
+        if not file_path.exists():
+            raise FileNotFoundError(f"The file {file_path} does not exist.")
+
         meta_data = cls._read_fwf(file_path)
 
         return cls(meta_data)
@@ -431,6 +434,8 @@ class Stations:
 
         filtered_rows = []
 
+        unavailable_urls = []
+
         for _, row in self.meta_data.iterrows():
             observations_files_available = True
 
@@ -438,6 +443,7 @@ class Stations:
                 url = ncei.lcd_data_url(year, row['ID'])
                 if url not in all_file_urls:
                     observations_files_available = False
+                    unavailable_urls.append(url)
 
             if observations_files_available:
                 filtered_rows.append(row)
@@ -452,6 +458,8 @@ class Stations:
                         '(not all files with observations in the requested time range are available for download)',
                         flush=True,
                     )
+                    for url in unavailable_urls:
+                        print('Unavailable: ', url)
 
         # Construct a new DataFrame from the selected rows
         meta_data = pd.DataFrame(filtered_rows, columns=self.meta_data.columns)
@@ -470,7 +478,7 @@ class Stations:
         Keep only stations for which all LCD CSV files in the given period
         are present in the given data directory.
 
-        This checks server-side file listings for every year in the inclusive
+        This checks local file listings for every year in the inclusive
         [start_time.year, end_time.year] range. It does not download files.
 
         Args:
@@ -509,6 +517,8 @@ class Stations:
 
         filtered_rows = []
 
+        unavailable_files = []
+
         for _, row in self.meta_data.iterrows():
             observations_files_available = True
 
@@ -516,6 +526,7 @@ class Stations:
                 file_path = data_dir / ncei.lcd_data_file_name(year, row['ID'])
                 if not file_path.exists():
                     observations_files_available = False
+                    unavailable_files.append(file_path)
 
             if observations_files_available:
                 filtered_rows.append(row)
@@ -530,6 +541,8 @@ class Stations:
                         '(not all files with observations in the requested time range are available locally)',
                         flush=True,
                     )
+                    for file_path in unavailable_files:
+                        print('Unavailable: ', file_path)
 
         # Construct a new DataFrame from the selected rows
         meta_data = pd.DataFrame(filtered_rows, columns=self.meta_data.columns)
@@ -1345,6 +1358,8 @@ class Stations:
 
         ds_stations = []
 
+        assert len(self.ids()) > 0, 'No stations in dataset. Aborting.'
+
         for station_id in self.ids():
             # Interpolate time series of the observables
 
@@ -1362,6 +1377,8 @@ class Stations:
 
             if ds is not None:
                 ds_stations.append(ds)
+
+        assert len(ds_stations) > 0, 'Not enough data. Aborting.'
 
         # Concatenate the individual station datasets into one dataset
 
