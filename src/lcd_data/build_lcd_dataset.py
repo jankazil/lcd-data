@@ -212,14 +212,10 @@ def main(argv=None):
 
     working_on_region = False
 
-    if region_name in region_codes.rto_iso_regions:
-        working_on_region = True
-        # Load RTO/ISO region GeoJSON from installed distribution using importlib.resources
-        rto_iso_geojson_res = files('lcd_data') / 'data' / 'EIA' / 'RTO_ISO_regions.geojson'
-        with as_file(rto_iso_geojson_res) as rto_iso_geojson_path:
-            region_gdf = rto_iso.region(rto_iso_geojson_path, region_name)
-
-    elif region_name in region_codes.us_states_territories:
+    if len(region_code) == 2:
+        assert region_code in region_codes.us_states_territories, (
+            'US state/territory code ' + region_code + ' is not available.'
+        )
         working_on_region = True
         # Load US states shapefile directory from installed distribution using importlib.resources
         us_states_dir_res = files('lcd_data') / 'data' / 'CensusBureau' / 'US_states'
@@ -227,6 +223,13 @@ def main(argv=None):
             us_states_shp_file = us_states_dir_path / 'tl_2024_us_state.shp'
             us_gdf = gpd.read_file(us_states_shp_file)
         region_gdf = us_gdf[us_gdf['STUSPS'].isin([region_name])]
+
+    elif region_name in region_codes.rto_iso_regions:
+        working_on_region = True
+        # Load RTO/ISO region GeoJSON from installed distribution using importlib.resources
+        rto_iso_geojson_res = files('lcd_data') / 'data' / 'EIA' / 'RTO_ISO_regions.geojson'
+        with as_file(rto_iso_geojson_res) as rto_iso_geojson_path:
+            region_gdf = rto_iso.region(rto_iso_geojson_path, region_name)
 
     elif region_name == region_codes.conus:
         working_on_region = True
