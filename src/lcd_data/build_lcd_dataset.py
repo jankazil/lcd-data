@@ -212,9 +212,9 @@ def main(argv=None):
 
     working_on_region = False
 
-    if len(region_code) == 2:
-        assert region_code in region_codes.us_states_territories, (
-            'US state/territory code ' + region_code + ' is not available.'
+    if len(region_name) == 2:
+        assert region_name in region_codes.us_states_territories, (
+            'US state/territory code ' + region_name + ' is not available.'
         )
         working_on_region = True
         # Load US states shapefile directory from installed distribution using importlib.resources
