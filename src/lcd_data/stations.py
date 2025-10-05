@@ -668,15 +668,15 @@ class Stations:
           - Parses known numeric fields to "float" with invalid entries set to
             NaN.
           - Adjusts select temperature-like columns that are stored as
-            degrees Celsius with a 18.3 °C base so that values are returned in
+            degrees Celsius with a 18.3 C base so that values are returned in
             true degrees Celsius.
           - Sets the "DATE" column as the index ("DatetimeIndex" in UTC) and
             drops the original "DATE" column.
           - Filters out rows where "REPORT_TYPE" is "BOGUS", "SOD"
             (summary of day), or "SOM" (summary of month).
-          - Drops temperature and dew point temperature when temperature > 60 ° C.
+          - Drops temperature and dew point temperature when temperature > 60 C.
             Such extreme values are indoubtedly non-representative, and may be caused,
-            e.g., by aircraft exhaust. Still, non-representative values < 60 ° C
+            e.g., by aircraft exhaust. Still, non-representative values < 60 C
             may remain in the data.
           - Removes duplicated times
           - Computes hourly relative humidity when both dry-bulb temperature
@@ -708,7 +708,7 @@ class Stations:
                 relative humidity.
             dict:
                 "units" mapping of column name to unit string (for example,
-                "° C", "hPa", "m/s") or "None" if not applicable.
+                "C", "hPa", "m/s") or "None" if not applicable.
 
         Notes:
             The function preserves the general LCD column layout but performs
@@ -880,7 +880,7 @@ class Stations:
         # Remove rows in which the column 'REPORT_TYPE' is 'SOM' (summary of month)
         df_output = df_output[df_output['REPORT_TYPE'] != 'SOM']
 
-        # Regularize temperature to not exceed 60° C - this eliminates extreme values, e.g. caused by aircraft exhaust
+        # Regularize temperature to not exceed 60C - this eliminates extreme values, e.g. caused by aircraft exhaust
         mask = df_output['HourlyDryBulbTemperature'] > 60
         df_output.loc[mask, 'HourlyDryBulbTemperature'] = np.nan
         df_output.loc[mask, 'HourlyDewPointTemperature'] = np.nan
@@ -982,10 +982,10 @@ class Stations:
             'Monthly average relative humidity',
             'Number of days with precipitation > 0.01',
             'Number of days with precipitation > 0.10',
-            'Number of days with temperature > 32°F',
-            'Number of days with temperature > 90°F',
-            'Number of days with temperature < 0°C',
-            'Number of days with temperature < 32°F',
+            'Number of days with temperature > 32 F',
+            'Number of days with temperature > 90 F',
+            'Number of days with temperature < 0 C',
+            'Number of days with temperature < 32 F',
             'Monthly departure from normal average temperature',
             'Monthly departure from normal cooling degree days',
             'Monthly departure from normal heating degree days',
@@ -1076,8 +1076,8 @@ class Stations:
             '',
             '',
             'hPa',
-            '° C',
-            '° C',
+            'C',
+            'C',
             'mm',
             'weather code(s)',
             'hPa',
@@ -1087,25 +1087,25 @@ class Stations:
             'hPa',
             'hPa',
             'km',
-            '° C',
+            'C',
             '° (1-360)',
             'm/s',
             'm/s',
             'LST (HH:mm)',
             'LST (HH:mm)',
-            '° C',
-            '° C',
+            'C',
+            'C',
             'percent',
             'hPa',
             'hPa',
-            '° C',
+            'C',
             'm/s',
-            '° C',
-            '° C',
-            '° C',
-            '° C',
-            '° C',
-            '° (1-360)',
+            'C',
+            'C',
+            'C',
+            'C',
+            'C',
+            '(1-360)',
             'm/s',
             'mm',
             'mm',
@@ -1120,13 +1120,13 @@ class Stations:
             'count',
             'count',
             'count',
-            '° C',
-            '° C',
-            '° C',
-            '° C',
-            '° C',
+            'C',
+            'C',
+            'C',
+            'C',
+            'C',
             'mm',
-            '° C',
+            'C',
             'mm',
             'DD-DD',
             'mm',
@@ -1136,27 +1136,27 @@ class Stations:
             'hPa',
             'DD',
             'HHmm',
-            '° C',
-            '° C',
+            'C',
+            'C',
             'hPa',
             'DD',
             'HHmm',
-            '° C',
+            'C',
             'hPa',
             'hPa',
             'mm',
             'mm',
-            '° C',
+            'C',
             'm/s',
-            '° C',
-            '° C',
+            'C',
+            'C',
             'count',
-            '° C',
-            '° C',
+            'C',
+            'C',
             'count',
             'count (visibility < 1/4 mile)',
-            '° C',
-            '° C',
+            'C',
+            'C',
             'datetime',
             'datetime',
             'datetime',
