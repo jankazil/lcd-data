@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from io import StringIO
 from pathlib import Path
 from typing import Self
+from zoneinfo import ZoneInfo
 
 import geopandas as gpd
 import matplotlib
@@ -14,6 +15,7 @@ import pandas as pd
 import requests
 import xarray as xr
 from shapely.geometry import Point
+from timezonefinder import TimezoneFinder
 
 from lcd_data import ncei, saturation
 
@@ -749,15 +751,58 @@ class Stations:
                 for ii in time_column_index:
                     original_column = df.iloc[:, ii].copy()
 
-                    converted_column = pd.to_datetime(original_column, utc=True, errors='coerce')
+                    converted_column = pd.to_datetime(original_column, errors='coerce')
 
                     df.iloc[:, ii] = converted_column
 
                     # Find rows where conversion failed (NaT after conversion)
+
                     failed = original_column[converted_column.isna() & original_column.notna()]
                     if not failed.empty:
                         print(f'Failed to convert time string in column {ii} to datetime object. Problematic time string(s):')
                         print(failed)
+
+                # Convert Local Standard Time (without Daylight Saving Time) to UTC
+
+                tf = TimezoneFinder()
+
+                # Rows with valid coordinates
+                coord_mask = df['LATITUDE'].notna() & df['LONGITUDE'].notna()
+
+                if coord_mask.any():
+                    # Use first valid coordinate pair to determine the time zone (only for offset reference)
+
+                    lat0, lon0 = df.loc[coord_mask, ['LATITUDE', 'LONGITUDE']].iloc[0]
+
+                    tzname = tf.timezone_at(lat=float(lat0), lng=float(lon0))
+                    if tzname is None:
+                        raise ValueError("Could not determine timezone from the provided coordinates.")
+
+                    print('(Time zone is ' + tzname + ')')
+
+                    tz = ZoneInfo(tzname)
+
+                    # Offset of Local Standard Time (without Daylight Saving Time) relative to UTC (utc_offset = LST - UTC)
+                    utc_offset = datetime(2025, 1, 1, 0, 0, tzinfo=tz).utcoffset()
+                    if utc_offset is None:
+                        raise ValueError(f"Could not obtain UTC offset for timezone: {tzname}")
+
+                    offset_td = pd.to_timedelta(utc_offset)
+
+                    for ii in time_column_index:
+                        col_label = df.columns[ii]
+
+                        # Work on a temporary datetime Series (naive LST)
+                        converted = pd.to_datetime(df[col_label], errors='coerce')
+
+                        # Only rows with coords AND a parsable timestamp
+                        mask = coord_mask & converted.notna()
+
+                        # Set time to UTC = LST - utc_offset, then localize to UTC
+                        utc_vals = (converted - offset_td).dt.tz_localize('UTC')
+
+                        # Assign back only where valid; this keeps original values elsewhere
+                        df.loc[mask, col_label] = utc_vals[mask]
 
                 # Convert columns that contain numbers to floating point values
 
