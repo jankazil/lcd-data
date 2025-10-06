@@ -4,7 +4,7 @@
 
 It provides:
 
-- A top level command-line tool that
+- A top-level command-line tool that
   
   - automates the download of LCD v2 station observations for
     - individual stations
@@ -17,7 +17,7 @@ It provides:
     - relative humidity at 2 m
     - wind speed at 10 m
   
-    from the irregularly spaced, local time LCD v2 station observation time series, for a selected station or for stations in the selected US state/territory or RTO/ISO region, and a user-specified time range. The time series are saved in a netCDF file.  
+    from the irregularly spaced, local time LCD v2 station observation time series, for a selected station or for stations in the selected U.S. state/territory or RTO/ISO region, and a user-specified time range. The time series are saved in a netCDF file.  
     
 - Modules for processing LCD v2 station observations.
 
@@ -93,9 +93,9 @@ Original and interpolated full-hourly UTC time series in November 2024, Twentyni
 Utilities for station metadata and LCD v2 downloads.
 
 - `download_stations_meta_files(local_dir)`: Download GHCNh and LCD v2 station meta documents.
-- `lcd_data_file_name(year, station_id)`: Construct the canonical LCD v2 observation file name.
+- `lcd_data_file_name(year, station_id)`: Construct LCD v2 observation file name.
 - `lcd_data_file_paths(start_year, end_year, station_ids, local_dir)`: Build local paths for all expected files.
-- `lcd_data_url(year, station_id)`: Build the absolute URL to a LCD v2 observation file.
+- `lcd_data_url(year, station_id)`: Build the absolute URL to an LCD v2 observation file.
 - `lcd_data_urls(station_ids, start_year, end_year, n_jobs)`: Probe NCEI server to list existing files.
 - `download_many(...)` and `download_threaded(...)`: Concurrent file downloads with optional refresh behavior.
 - `download_file(url, local_dir, refresh=False, verbose=False)`: Robust download with ETag checking and retries.
@@ -139,7 +139,7 @@ Station catalog handling, filtering, reading, interpolation, and writing.
 - `make fmt` - Runs ruff format, which automatically reformats Python files according to the style rules in `pyproject.toml`
 - `make lint` - Runs ruff check - -fix, which lints the code (checks for style errors, bugs, outdated patterns, etc.) and auto-fixes what it can.
 - `make check` - Runs fmt and lint.
-- `make type` - Currently disabled. Runs mypy, the static type checker, using the strictness settings from `pyproject.toml`. Mypy is a static type checker for Python, a dynamically typed language. Because static analysis cannot account for all dynamic runtime behaviors, mypy may report false positives which do no reflect actual runtime issues.
+- `make type` - Currently disabled. Runs mypy, the static type checker, using the strictness settings from `pyproject.toml`. Mypy is a static type checker for Python, a dynamically typed language. Because static analysis cannot account for all dynamic runtime behaviors, mypy may report false positives which do not reflect actual runtime issues.
 - `make test` - Runs pytest with reporting (configured in `pyproject.toml`).
 
 ## Disclaimers
