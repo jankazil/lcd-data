@@ -392,7 +392,7 @@ class Stations:
     ) -> Self:
         '''
 
-        Keep only stations for which all LCD CSV files needed for the given
+        Keep only stations for which all LCD files needed for the given
         period are present on the NCEI server.
 
         This checks server-side file listings for every year in the inclusive
@@ -477,7 +477,7 @@ class Stations:
     ) -> Self:
         '''
 
-        Keep only stations for which all LCD CSV files in the given period
+        Keep only stations for which all LCD files in the given period
         are present in the given data directory.
 
         This checks local file listings for every year in the inclusive
@@ -485,7 +485,7 @@ class Stations:
 
         Args:
             data_dir (Path):
-                Directory containing the LCD CSV files named as on the NCEI LCD server.
+                Directory containing the LCD files named as on the NCEI LCD server.
             start_time (datetime):
                 Start of the period of interest (only the year is used).
             end_time (datetime):
@@ -650,7 +650,7 @@ class Stations:
         station_id: str,
     ) -> tuple[pd.DataFrame, dict, dict]:
         '''
-        Load Local Climatological Data (LCD) CSV files for one station over an
+        Load Local Climatological Data (LCD) files for one station over an
         inclusive year range and return a cleaned, time-indexed table plus
         column metadata.
 
@@ -664,9 +664,10 @@ class Stations:
         Processing performed:
           - Verifies each expected file exists; raises "ValueError" if a file
             is missing.
-          - Reads CSVs as text with comma separation and double-quoted fields;
+          - Reads files as text with comma separation and double-quoted fields;
             empty strings become NaN; non-converted fields remain strings.
-          - Parses known time fields to timezone-aware "datetime64[ns, UTC]".
+          - Converts known time fields in the file from Local Standard Time (without
+            Daylight Saving Time) to UTC timezone-aware "datetime64[ns, UTC]" objects
           - Parses known numeric fields to "float" with invalid entries set to
             NaN.
           - Adjusts select temperature-like columns that are stored as
@@ -689,7 +690,7 @@ class Stations:
 
         Args:
             data_dir (Path):
-                Directory containing the LCD CSV files named as on the NCEI LCD server.
+                Directory containing the LCD files named as on the NCEI LCD server.
             start_year (int):
                 First year to include (inclusive).
             end_year (int):
@@ -1346,7 +1347,7 @@ class Stations:
         Parameters
         ----------
         data_dir : Path
-            Directory containing LCD CSV files.
+            Directory containing LCD files.
         start_year : int
             First calendar year to include (inclusive).
         end_year : int
@@ -1470,7 +1471,7 @@ class Stations:
         Parameters
         ----------
         data_dir : Path
-            Directory containing previously downloaded LCD CSV files.
+            Directory containing previously downloaded LCD files.
         start_year : int
             First calendar year to include (inclusive).
         end_year : int
