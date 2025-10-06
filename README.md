@@ -11,13 +11,13 @@ It provides:
     - U.S. states and territories
     - Regional Transmission Organization (RTO) / Independent System Operator (ISO) regions
     
-  - constructs by interpolation the full-hourly UTC time series of
+  - constructs full-hourly UTC time series of
     - temperature at 2 m
     - dew point temperature at 2 m
     - relative humidity at 2 m
     - wind speed at 10 m
   
-    from the LCD v2 station observation time series, for the selected station or stations in the selected state/territory/region, and a user-specified time range, and saves them as a netCDF file.  
+    from the irregularly spaced, local time LCD v2 station observation time series, for a selected station or for stations in the selected US state/territory or RTO/ISO region, and a user-specified time range. The time series are saved in a netCDF file.  
     
 - Modules for processing LCD v2 station observations.
 
@@ -31,27 +31,26 @@ pip install git+https://github.com/jankazil/lcd-data
 
 ## Overview
 
-The package provides a command-line tool that selects stations by geography (a single station by GHCNh identifier, a U.S. state or territory, RTO/ISO regions, and the special region CONUS representing the contiguous U.S.), checks data availability, downloads LCD v2 observation files for a given year range, constructs full-hourly UTC time series for several observables, and writes a NetCDF file. It can optionally generate plots comparing the original and the interpolated time series.
+The package provides a command-line tool that selects stations by geography (a single station by GHCNh identifier, a U.S. state or territory, RTO/ISO regions, and the special region CONUS representing the contiguous U.S.), checks data availability, downloads LCD v2 observation files for a given year range, constructs full-hourly UTC time series for the observables, and saves them in a NetCDF file. It optionally generate plots showing the original and the interpolated time series.
 
 Geospatial region selection is based on U.S. Energy Information Administration definitions of RTO/ISO footprints, and U.S. Census Bureau state/territory boundaries, included with the package.
 
-The station list with GHCNh station identifiers is available [here](https://www.ncei.noaa.gov/oa/global-historical-climatology-network/hourly/doc/ghcnh-station-list.txt).
+The list of GHCNh station identifiers is available [here](https://www.ncei.noaa.gov/oa/global-historical-climatology-network/hourly/doc/ghcnh-station-list.txt). LCD v2 contains only U.S. stations.
 
 ## Workflow
 
 The following describes the internal workflow performed by the command-line tool:
 
 1. Load the region geometry (RTO/ISO polygons or U.S. state/territory boundaries) if a region is specified; skip this step if a station ID is provided.
-2. Retrieve the station list from NCEI and either filter it spatially by region or select the specified station. Cache the list to disk.
+2. Retrieve the station list from NCEI and either filter it spatially by region or select the specified station.
 3. Filter the stations by data availability for the requested year range, either online by probing NCEI or offline by checking local files.
 4. Save the filtered station list for reference.
 5. Download LCD v2 observation files from NCEI for the selected stations and years, skipping files already present that match by ETag.
-6. Construct full-hourly UTC time series for temperature (T), dew point (Td), relative humidity (RH), and wind speed by reading, cleaning, and interpolating station observations. Remove temperatures above 60 °C. Perform interpolation only across gaps of up to 2 hours. Derive RH from T and Td.
-7. Optionally write comparison plots for the original and interpolated series.
-8. Save the full-hourly UTC time series as a NetCDF file, for the given station or the stations in the state/region.
+6. Create full-hourly UTC time series for temperature (T), dew point temperature (Td), relative humidity (RH), and wind speed by converting local observation time to UTC and interpolating the data to full hours. Remove temperatures above 60 °C. Perform interpolation only across gaps of up to 2 hours. Derive RH from T and Td.
+7. Optionally create comparison plots for the original and interpolated series.
+8. Save the full-hourly UTC time series in a NetCDF file, for the given station or the stations in the state/region.
 
-**Note:** Interpolation of station observations to construct full-hourly UTC time series across many years and/or many stations can be very slow due to inherent limitations of Python.
-
+**Notes:** Interpolation of station observation time series across many years and/or many stations can be slow due to inherent limitations of Python. Creating plots is very slow and recommended only for individual stations (as opposed to regions).
 
 ## Command-line interface (CLI)
 
@@ -71,7 +70,7 @@ build-lcd-dataset 2021 2021 CO /path/to/data --offline
 **Positional arguments**  
 
 - `start_year` and `end_year`: Inclusive range of years.  
-- `region_name`: Two-letter U.S. state or territory code (e.g., `CA`, `PR`), the special region `CONUS`, one of the RTO/ISO codes (`ERCOT`, `CAISO`, `ISONE`, `NYISO`, `MISO`, `SPP`, `PJM`), or a station identifier as in [the GHCNh station list](https://www.ncei.noaa.gov/oa/global-historical-climatology-network/hourly/doc/ghcnh-station-list.txt).  
+- `region_name`: Two-letter U.S. state or territory code (e.g., `CA`, `PR`), the special region `CONUS`, one of the RTO/ISO codes (`ERCOT`, `CAISO`, `ISONE`, `NYISO`, `MISO`, `SPP`, `PJM`), or a U.S. station identifier as in [the GHCNh station list](https://www.ncei.noaa.gov/oa/global-historical-climatology-network/hourly/doc/ghcnh-station-list.txt).  
 - `data_dir`: Destination directory for station lists, downloads, and outputs.
 
 **Options**  
@@ -93,7 +92,6 @@ Original and interpolated full-hourly UTC time series in November 2024, Twentyni
 #### `lcd_data.ncei`
 Utilities for station metadata and LCD v2 downloads.
 
-- URLs for NCEI GHCNh station list and LCD v2 observation files.
 - `download_stations_meta_files(local_dir)`: Download GHCNh and LCD v2 station meta documents.
 - `lcd_data_file_name(year, station_id)`: Construct the canonical LCD v2 observation file name.
 - `lcd_data_file_paths(start_year, end_year, station_ids, local_dir)`: Build local paths for all expected files.
@@ -130,7 +128,7 @@ Station catalog handling, filtering, reading, interpolation, and writing.
 - Spatial selection by region geometry with `filter_by_region(region_gdf)` and by bounding box with `filter_by_coordinates(...)`.
 - Availability filters: `filter_by_data_availability_online(start_time, end_time, n_jobs, verbose)` and `filter_by_data_availability_offline(data_dir, start_time, end_time, verbose)`.
 - Station utilities: `filter_by_id(station_id)`, `ids()`, `save_station_list(path)`.
-- `read_station_observations(...)`: Read and clean per‑station LCD v2 observation files; parse times to UTC, coerce numeric columns, correct Celsius-with-18.3° base fields, drop non-observational report types, limit unrealistic temperatures, and compute hourly RH.
+- `read_station_observations(...)`: Read and clean per‑station LCD v2 observation files; convert times to UTC, coerce numeric columns, correct Celsius-with-18.3° base fields, drop non-observational report types, limit unrealistic temperatures, and compute hourly RH.
 - `construct_hourly(...)`: Build full-hourly UTC series for `T`, `Td`, `RH`, and `windspeed`, with optional plotting and gap-limited interpolation.
 - `write_utc_hourly_netcdf(path)`: Save the hourly dataset to NetCDF with safe encodings.
 
