@@ -1,6 +1,6 @@
 import gc
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from io import StringIO
 from pathlib import Path
 from typing import Self
@@ -416,9 +416,8 @@ class Stations:
         '''
 
         # Force time zone to be UTC
-        
-        start_time = start_time.replace(tzinfo=timezone.utc)
-        end_time = end_time.replace(tzinfo=timezone.utc)
+        start_time = start_time.replace(tzinfo=UTC)
+        end_time = end_time.replace(tzinfo=UTC)
 
         # Get the URLs of all LCD data files on the NCEI web server:
 
@@ -506,9 +505,8 @@ class Stations:
         '''
 
         # Force time zone to be UTC
-        
-        start_time = start_time.replace(tzinfo=timezone.utc)
-        end_time = end_time.replace(tzinfo=timezone.utc)
+        start_time = start_time.replace(tzinfo=UTC)
+        end_time = end_time.replace(tzinfo=UTC)
 
         #
         # Construct a new dataframe
@@ -1623,10 +1621,10 @@ class Stations:
         # Construct full hour UTC times for the given range of years, as a list of datetime objects
 
         start_time = datetime(year=start_year, month=1, day=1, hour=0, minute=0, second=0)
-        start_time = start_time.replace(tzinfo=timezone.utc)
+        start_time = start_time.replace(tzinfo=UTC)
 
         end_time = datetime(year=end_year, month=12, day=31, hour=23, minute=0, second=0)
-        end_time = end_time.replace(tzinfo=timezone.utc)
+        end_time = end_time.replace(tzinfo=UTC)
 
         time_step = timedelta(hours=1)
 
