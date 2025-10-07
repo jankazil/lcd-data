@@ -982,10 +982,11 @@ class Stations:
             for ii in row_numbers_remove:
                 print(file_path, df_output.index[ii])
 
-            # Convert row numbers to index labels and drop the corresponding rows
+            # Convert row numbers to index labels and drop duplicated rows
 
-            index_labels_to_remove = df_output.index[row_numbers_remove]
-            df_output = df_output.drop(index_labels_to_remove)
+            mask = np.ones(len(df_output), dtype=bool)
+            mask[row_numbers_remove] = False
+            df_output = df_output[mask]
 
         # Create a dictionary that translates the column name to long name
 
