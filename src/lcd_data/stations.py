@@ -1646,6 +1646,13 @@ class Stations:
             return None
 
         #
+        # If there are no valid values for latitude and longitude in the dataset, return None
+        #
+
+        if df['LATITUDE'].isna().all() or df['Longitude'].isna().all():
+            return None
+
+        #
         # If there are no valid values for the requested variables in the dataset, return None
         #
 
