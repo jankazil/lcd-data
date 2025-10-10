@@ -60,10 +60,13 @@ The CLI is exposed as `"build-lcd-dataset"` when installed:
 # Provide usage information, a list of two-letter U.S. state/territory codes, and a list of RTO/ISO region names:
 build-lcd-dataset --help
   
+# Download LCDv2 data and build dataset as a netCDF file for station USW00003017 for the years 2020 to 2025, in the directory /path/to/data, and create plots in the directory /path/to/plots:
 build-lcd-dataset 2020 2025 USW00003017 /path/to/data -p /path/to/plots
   
+# Download LCDv2 data and build dataset as a netCDF file for the RTO region `ERCOT` for the year 2022 in the directory /path/to/data, using at most 32 parallel download processes:
 build-lcd-dataset 2022 2022 ERCOT /path/to/data -n 32
   
+# Build dataset as a netCDF file for the state of Colorado for the year 2021, in the directory /path/to/data, offline from LCDv2 data that have been previously downloaded to the directory /path/to/data:
 build-lcd-dataset 2021 2021 CO /path/to/data --offline
 ```
 
