@@ -26,7 +26,7 @@ LCD v2 is provided by the [National Centers for Environmental Information (NCEI)
 ## Installation (Linux / macOS)
 
 ```bash
-pip install git+https://github.com/jankazil/lcd-data
+mamba install -c jan.kazil -c conda-forge lcd-data
 ```
 
 ## Overview
