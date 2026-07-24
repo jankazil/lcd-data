@@ -4,15 +4,16 @@ Tools for download of Local Climatological Data (LCD) version 2
 from National Centers for Environmental Information (NCEI).
 '''
 
-import os
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
 import requests
 
-# Note that
+from lcd_data import web
+
+# Notes:
 #
 # - the GHCNh station list file provides more metadata than the LCD
 #   station list file even for stations in the US,
@@ -52,10 +53,10 @@ def download_stations_meta_files(local_dir: Path):
 
     # Download files - we download both the GHCNh and the LCD files.
 
-    download_file(ghcnh_station_list_url, local_dir, verbose=True)
-    download_file(ghcnh_station_doc_url, local_dir, verbose=True)
-    download_file(lcd_station_list_url, local_dir, verbose=True)
-    download_file(lcd_station_doc_url, local_dir, verbose=True)
+    web.download_file(ghcnh_station_list_url, local_dir, verbose=True)
+    web.download_file(ghcnh_station_doc_url, local_dir, verbose=True)
+    web.download_file(lcd_station_list_url, local_dir, verbose=True)
+    web.download_file(lcd_station_doc_url, local_dir, verbose=True)
 
     return
 
@@ -158,38 +159,11 @@ def lcd_data_urls(station_ids: list[str], start_year: int, end_year: int, n_jobs
         candidates = [f"{lcd_url}/v2/access/{year}/LCD_{sid}_{year}.csv" for sid in station_ids]
 
         with ThreadPoolExecutor(max_workers=n_jobs) as exe:
-            for url, ok in zip(candidates, exe.map(_head_ok, candidates), strict=False):
+            for url, ok in zip(candidates, exe.map(web.head_ok, candidates), strict=False):
                 if ok:
                     urls.append(url)
 
     return urls
-
-
-def _head_ok(url: str, timeout: float = 10.0) -> bool:
-    """
-    Check whether a remote file exists by issuing a lightweight HTTP request.
-
-    This function first attempts an HTTP HEAD request to the given URL. If the
-    server does not support HEAD (status 405) or returns certain 4xx errors
-    other than 404, it falls back to a streaming GET request to verify
-    availability.
-
-    Args:
-        url (str): Absolute URL of the resource to check.
-        timeout (float): Timeout in seconds for the request. Defaults to 10.0.
-
-    Returns:
-        bool: True if the server responds with HTTP 200 (OK), False if the
-        request fails, times out, or returns a non-200 status code.
-    """
-    try:
-        r = requests.head(url, allow_redirects=True, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
-        # Some servers may not support HEAD well; fall back to GET for 405/403 peculiarities
-        if r.status_code == 405 or (400 <= r.status_code < 500 and r.status_code != 404):
-            r = requests.get(url, stream=True, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
-        return r.status_code == 200
-    except requests.RequestException:
-        return False
 
 
 def download_many(
@@ -240,135 +214,11 @@ def download_many(
         for station_id in station_ids:
             urls.append(lcd_data_url(year, station_id))
 
-        local_file_paths = download_threaded(urls, local_dir, n_jobs=n_jobs, refresh=refresh, verbose=verbose)
+        local_file_paths = web.download_threaded(urls, local_dir, n_jobs=n_jobs, refresh=refresh, verbose=verbose)
 
         all_local_file_paths = all_local_file_paths + local_file_paths
 
     return all_local_file_paths
-
-
-def download_threaded(urls: list[str], local_dir: Path, n_jobs=1, refresh: bool = False, verbose: bool = False):
-    """
-    Downloads a given number of files from given URLs to given local directory, in parallel.
-
-    Args:
-        urls (list[str]): List of URLs of files to download
-        local_dir (Path): Local directory where the downloaded files will be saved.
-        n_jobs (int): Maximum number of parallel downloads
-        refresh (bool, optional): If True, download even if the file already exists. Defaults to False.
-        verbose (bool): If True, print information. Defaults to False.
-    Returns:
-        list[Path]: List of local paths of the downloaded files.
-    """
-
-    if n_jobs is None:
-        n_jobs = 1
-
-    local_file_paths = []
-
-    with ThreadPoolExecutor(max_workers=n_jobs) as executor:
-        futures = [executor.submit(download_file, url, local_dir, refresh, verbose) for url in urls]
-        for future in as_completed(futures):
-            try:
-                local_file_path = future.result()
-                local_file_paths.append(local_file_path)
-            except Exception as exc:
-                print(f"Download generated an exception: {exc}")
-
-    return local_file_paths
-
-
-def download_file(url: str, local_dir: Path, refresh: bool = False, verbose: bool = False) -> Path:
-    '''
-    Downloads a file from a given URL to a given local path.
-
-        Args:
-        url (str): URL of file to download
-        local_dir (Path): Local directory where files will be downloaded
-        refresh (bool, optional): If True, download even if the file already exists. Defaults to False.
-                                  When False:
-                                  - if the local ETag of the file matches its ETag online, then the file will not be downloaded.
-                                  - if the local ETag of the file differs from its ETag online, then the file will be downloaded.
-        verbose (bool): If True, print information. Defaults to False.
-
-        Returns:
-        Path: Path to the downloaded file.
-
-    '''
-
-    max_retries = 1200
-    delay_seconds = 3
-
-    # Local file path
-    local_file_path = local_dir / Path(os.path.basename(url))
-
-    # Get ETag with retry
-    for attempt in range(max_retries):
-        try:
-            response = requests.head(url, timeout=10)
-            response.raise_for_status()
-            break
-        except requests.exceptions.RequestException as e:
-            if attempt < max_retries - 1:
-                if verbose:
-                    print(f'HEAD request failed ({e}), retrying in {delay_seconds} second(s)...')
-                time.sleep(delay_seconds)
-            else:
-                raise
-
-    etag = response.headers.get('ETag')
-    if etag is None:
-        message = '\n' + 'ETag not found of file at URL ' + url + '\n' + 'This could mean the file does not exist at this URL.'
-        raise Exception(message)
-
-    etag_file_path = local_file_path.with_name(local_file_path.name + '.etag')
-
-    if not refresh and local_file_path.exists() and etag_file_path.exists():
-        with open(etag_file_path) as f:
-            local_etag = f.read().strip()
-        if local_etag == etag:
-            if verbose:
-                print(
-                    url,
-                    'available locally as',
-                    str(local_file_path),
-                    'and ETag matches ETag online. Skipping download.',
-                )
-            return
-        else:
-            if verbose:
-                print(
-                    url,
-                    'available locally as',
-                    str(local_file_path),
-                    'and ETag differs from ETag online. Proceeding to download.',
-                )
-
-    # Download with retry
-    for attempt in range(max_retries):
-        try:
-            with requests.get(url, stream=True, timeout=30) as r:
-                r.raise_for_status()
-                with open(local_file_path, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
-            break
-        except requests.exceptions.RequestException as e:
-            if attempt < max_retries - 1:
-                if verbose:
-                    print(f'Download failed ({e}), retrying in {delay_seconds} second(s)...')
-                time.sleep(delay_seconds)
-            else:
-                raise
-
-    if verbose:
-        print('Downloaded', url, 'as', local_file_path)
-
-    with open(etag_file_path, 'w') as f:
-        f.write(etag)
-
-    return local_file_path
 
 
 def get_period_of_record(station_id: str, token: str, timeout: int = 60, max_retries: int = 1200, retry_delay: int = 3) -> dict:
