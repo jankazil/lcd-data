@@ -124,7 +124,7 @@ def download_file(url: str, local_dir: Path, refresh: bool = False, verbose: boo
                     str(local_file_path),
                     'and ETag matches ETag online. Skipping download.',
                 )
-            return
+            return local_file_path
         else:
             if verbose:
                 print(
