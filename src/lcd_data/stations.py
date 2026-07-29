@@ -1869,7 +1869,7 @@ class Stations:
                 if (
                     index_l[hour_i] is not None
                     and hours_utc_datetime[hour_i] == df.index[index_l[hour_i]]
-                    and not np.isnan(df[var_name_lcd].iloc[index_l[hour_i]])
+                    and np.isfinite(df[var_name_lcd].iloc[index_l[hour_i]])
                 ):
                     timeseries_hourly[hour_i] = df[var_name_lcd].iloc[index_l[hour_i]]
 
@@ -1888,7 +1888,7 @@ class Stations:
                     while ii >= 0:
                         if np.abs((hours_utc_datetime[hour_i] - df.index[ii]).total_seconds()) > max_interpolation_interval_s:
                             break
-                        if not np.isnan(df[var_name_lcd].iloc[ii]):
+                        if np.isfinite(df[var_name_lcd].iloc[ii]):
                             time_l = df.index[ii]
                             time_delta_seconds_l = np.abs((hours_utc_datetime[hour_i] - time_l).total_seconds())
                             value_l = df[var_name_lcd].iloc[ii]
@@ -1904,14 +1904,14 @@ class Stations:
 
                     # Only proceed if a valid observation was found on the left in the interpolation interval
 
-                    if not np.isnan(time_delta_seconds_l):
+                    if np.isfinite(time_delta_seconds_l):
                         while ii < len(df.index):
                             if (
                                 np.abs((hours_utc_datetime[hour_i] - df.index[ii]).total_seconds())
                                 > max_interpolation_interval_s - time_delta_seconds_l
                             ):
                                 break
-                            if not np.isnan(df[var_name_lcd].iloc[ii]):
+                            if np.isfinite(df[var_name_lcd].iloc[ii]):
                                 time_r = df.index[ii]
                                 #                                time_delta_seconds_r = np.abs((hours_utc_datetime[hour_i] - time_r).total_seconds())
                                 value_r = df[var_name_lcd].iloc[ii]
@@ -1920,7 +1920,7 @@ class Stations:
 
                     # If both left and right observable values are valid, perform (linear) interpolation
 
-                    if not np.isnan(value_l) and not np.isnan(value_r):
+                    if np.isfinite(value_l) and np.isfinite(value_r):
                         timeseries_hourly[hour_i] = (
                             value_l
                             + (hours_utc_datetime[hour_i] - time_l).total_seconds()
@@ -1932,8 +1932,14 @@ class Stations:
             # with the last time in LCD time series, as the above algorithm
             # misses that last hour
 
-            if hours_utc_datetime[-1] == df.index[-1]:
-                timeseries_hourly[-1] = df[var_name_lcd].iloc[-1]
+            last_time = df.index[-1]
+            last_value = df[var_name_lcd].iloc[-1]
+
+            hours_index = pd.DatetimeIndex(hours_utc_datetime)
+            last_hour_i = hours_index.get_indexer([last_time])[0]
+
+            if last_hour_i != -1 and np.isfinite(last_value):
+                timeseries_hourly[last_hour_i] = last_value
 
             # Add the interpolated observable value to the dataset, as both a function of time and station
 
