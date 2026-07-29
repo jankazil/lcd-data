@@ -49,12 +49,9 @@ import argparse
 import os
 import sys
 from datetime import datetime
-from importlib.resources import as_file, files
 from pathlib import Path
 
-import geopandas as gpd
-
-from lcd_data import ncei, region_codes, rto_iso, stations
+from lcd_data import ncei, region_codes, stations
 
 
 def run_build(
@@ -132,41 +129,8 @@ def run_build(
     end_date = datetime(year=end_year, month=12, day=31)
 
     #
-    # Identify stations in the selected US state, territory, region, or handle an individual station
-    #
-
-    working_on_region = False
-
-    if len(region_name) == 2:
-        assert region_name in region_codes.us_states_territories, (
-            'US state/territory code ' + region_name + ' is not available.'
-        )
-        working_on_region = True
-        # Load US states shapefile directory from installed distribution using importlib.resources
-        us_states_dir_res = files('lcd_data') / 'data' / 'CensusBureau' / 'US_states'
-        with as_file(us_states_dir_res) as us_states_dir_path:
-            us_states_shp_file = us_states_dir_path / 'tl_2024_us_state.shp'
-            us_gdf = gpd.read_file(us_states_shp_file)
-        region_gdf = us_gdf[us_gdf['STUSPS'].isin([region_name])]
-
-    elif region_name in region_codes.rto_iso_regions:
-        working_on_region = True
-        # Load RTO/ISO region GeoJSON from installed distribution using importlib.resources
-        rto_iso_geojson_res = files('lcd_data') / 'data' / 'EIA' / 'RTO_ISO_regions.geojson'
-        with as_file(rto_iso_geojson_res) as rto_iso_geojson_path:
-            region_gdf = rto_iso.region(rto_iso_geojson_path, region_name)
-
-    elif region_name == region_codes.conus:
-        working_on_region = True
-        # Load US states shapefile directory from installed distribution using importlib.resources
-        us_states_dir_res = files('lcd_data') / 'data' / 'CensusBureau' / 'US_states'
-        with as_file(us_states_dir_res) as us_states_dir_path:
-            us_states_shp_file = us_states_dir_path / 'tl_2024_us_state.shp'
-            us_gdf = gpd.read_file(us_states_shp_file)
-        exclude_codes = ['AK', 'HI', 'PR', 'GU', 'VI', 'AS', 'MP']
-        region_gdf = us_gdf[~us_gdf['STUSPS'].isin(exclude_codes)]
-
     # File with list of all stations and metadata
+    #
 
     all_stations_file = data_dir / Path(os.path.basename(ncei.ghcnh_station_list_url))
 
@@ -178,12 +142,18 @@ def run_build(
         all_stations = stations.Stations.from_url()
         all_stations.save_station_list(all_stations_file, verbose=verbose)
 
-    # Determine if we are working on a region or an individual station
+    #
+    # Identify stations in the selected US state, territory, region, or handle an individual station
+    #
 
-    if working_on_region:
-        region_stations = all_stations.filter_by_region(region_gdf)
-    else:
+    region_gdf = region_codes.get_region_gdf(region_name)
+
+    if region_gdf is None:
+        # The user provided a station ID, not a region code
         region_stations = all_stations.filter_by_id(region_name)
+    else:
+        # The user provided a region code
+        region_stations = all_stations.filter_by_region(region_gdf)
 
     # Filter by data availability
 

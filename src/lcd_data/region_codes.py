@@ -5,7 +5,51 @@ Provides
   - Two-letter U.S. state or territory codes
   - The special region 'CONUS' code
   - RTO/ISO region codes
+
+  - Function that returns a Geopandas GeoDataFrame specifying the above regions
 '''
+
+from importlib.resources import as_file, files
+
+import geopandas as gpd
+import rto_iso
+
+
+def get_region_gdf(region_code: str) -> gpd.GeoDataFrame | None:
+    '''
+    Return the GeoDataFrame specifying the requested region, based
+    on the region codes defined in this module. If the region code
+    is not recognized, return None.
+    '''
+    if len(region_code) == 2:
+        if region_code not in us_states_territories:
+            raise ValueError(f'US state/territory code {region_code} is not available.')
+
+        resource = files('lcd_data') / 'data' / 'CensusBureau' / 'US_states'
+
+        with as_file(resource) as directory:
+            us_gdf = gpd.read_file(directory / 'tl_2024_us_state.shp')
+
+        region_gdf = us_gdf[us_gdf['STUSPS'] == region_code]
+
+    elif region_code in rto_iso_regions:
+        resource = files('lcd_data') / 'data' / 'EIA' / 'RTO_ISO_regions.geojson'
+        with as_file(resource) as path:
+            region_gdf = rto_iso.region(path, region_code)
+
+    elif region_code == conus:
+        resource = files('lcd_data') / 'data' / 'CensusBureau' / 'US_states'
+        with as_file(resource) as directory:
+            us_gdf = gpd.read_file(directory / 'tl_2024_us_state.shp')
+
+        exclude_codes = ['AK', 'HI', 'PR', 'GU', 'VI', 'AS', 'MP']
+        region_gdf = us_gdf[~us_gdf['STUSPS'].isin(exclude_codes)]
+
+    else:
+        return None
+
+    return region_gdf
+
 
 #
 # ISO 3166-1 alpha-3 country codes
