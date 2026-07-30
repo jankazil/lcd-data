@@ -12,7 +12,8 @@ Provides
 from importlib.resources import as_file, files
 
 import geopandas as gpd
-import rto_iso
+
+from lcd_data import rto_iso
 
 
 def get_region_gdf(region_code: str) -> gpd.GeoDataFrame | None:
